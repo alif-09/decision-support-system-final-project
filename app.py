@@ -1,27 +1,50 @@
-import streamlit as st
+from flask import Flask, request, jsonify
 from utils import load_tokenizer, load_model_file, predict_text
+import os
 
-# model load
-@st.cache_resource
-def load_resources():
-    tokenizer = load_tokenizer()
-    model = load_model_file()
-    return tokenizer, model
+app = Flask(__name__)
 
-tokenizer, model = load_resources()
+# resources
+tokenizer = load_tokenizer('tokenizer.pkl')
+model = load_model_file('model.keras')
 
-# Streamlit
-st.title("Text Classification App")
-st.write("This app predicts if a given text is related to 'suicide' or 'non-suicide'.")
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Invalid input, JSON data required'}), 400
 
-# Input teks
-user_input = st.text_area("Enter your text:", placeholder="Type here...")
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'error': 'Invalid input, "text" key is required'}), 400
 
-if st.button("Predict"):
-    if user_input.strip():
-        predicted_class, predicted_prob = predict_text(model, tokenizer, user_input)
-        
-        st.subheader(f"Prediction: {predicted_class}")
-        st.write(f"Confidence: {predicted_prob:.2f}%")
-    else:
-        st.error("Please enter some text to classify.")
+        text = data['text']
+        if not isinstance(text, str) or text.strip() == '':
+            return jsonify({'error': 'Invalid input, "text" must be a non-empty string'}), 400
+
+        predicted_class, predicted_prob = predict_text(model, tokenizer, text)
+        # sukses
+        response = {
+            'prediction': predicted_class,
+            'confidence': f"{predicted_prob:.2f}%"
+        }
+        return jsonify(response), 200
+
+    except Exception as e:
+        # 500
+        return jsonify({'error': 'Internal Server Error', 'message': str(e)}), 500
+
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({'error': 'Method Not Allowed'}), 405
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not Found'}), 404
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
