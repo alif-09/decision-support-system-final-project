@@ -114,4 +114,4 @@ with cols[1]:
              caption="Tegar Muhamad Rizki\n140810220034")
 with cols[2]:
     st.image(make_rounded_image('public/alif.jpg'), width=150,
-             caption="Alif Al Husaini\n140810220034")
+             caption="Alif Al Husaini\n140810220036")
