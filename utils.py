@@ -9,6 +9,7 @@ from googletrans import Translator
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import spacy
 import wordninja
+from PIL import Image, ImageOps, ImageDraw
 
 def load_tokenizer(tokenizer_path):
     with open(tokenizer_path, 'rb') as file:
@@ -229,3 +230,15 @@ def predict_text(model, tokenizer, text, max_length=100):
     class_names = ['Not Suicidal', 'Suicidal']
     return class_names[predicted_class[0]], predicted_prob
 
+# insert image in dashboard
+def make_rounded_image(image_path):
+    """Creating image with rounded border"""
+    img = Image.open(image_path).convert("RGB")
+    # creating mask circle
+    mask = Image.new("L", img.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0) + img.size, fill=255)
+    # Aplly the mask to the image
+    rounded_img = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
+    rounded_img.putalpha(mask)
+    return rounded_img
