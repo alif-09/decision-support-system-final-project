@@ -8,6 +8,7 @@ from langdetect import detect
 from googletrans import Translator
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import spacy
+spacy.require_gpu = False  # Disable GPU support in spacy if GPU is not available
 import wordninja
 from PIL import Image, ImageOps, ImageDraw
 
@@ -238,7 +239,7 @@ def make_rounded_image(image_path):
     mask = Image.new("L", img.size, 0)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((0, 0) + img.size, fill=255)
-    # Aplly the mask to the image
+    # Apply the mask to the image
     rounded_img = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
     rounded_img.putalpha(mask)
     return rounded_img
