@@ -1,50 +1,95 @@
-from flask import Flask, request, jsonify
+import streamlit as st
 from utils import load_tokenizer, load_model_file, predict_text
-import os
 
-app = Flask(__name__)
-
-# resources
+# Load resources
 tokenizer = load_tokenizer('tokenizer.pkl')
-model = load_model_file('model.keras')
+model = load_model_file('best_model.keras')
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Invalid input, JSON data required'}), 400
+# Page Configuration
+st.set_page_config(
+    page_title="Prediksi Kondisi Mental",
+    page_icon="🧠",
+    layout="centered"
+)
 
-        data = request.get_json()
-        if not data or 'text' not in data:
-            return jsonify({'error': 'Invalid input, "text" key is required'}), 400
+# App Title and Description
+st.markdown(
+    """
+    <h1 style='text-align: center; color: #4CAF50; font-size: 36px;'>🧠 Aplikasi Prediksi Kondisi Mental</h1>
+    """,
+    unsafe_allow_html=True
+)
 
-        text = data['text']
-        if not isinstance(text, str) or text.strip() == '':
-            return jsonify({'error': 'Invalid input, "text" must be a non-empty string'}), 400
+st.markdown(
+    """
+    <div style="text-align: center;">
+        Selamat datang di <strong>Aplikasi Prediksi Kondisi Mental</strong>!  
+        Aplikasi ini dirancang untuk membantu mendeteksi apakah teks yang Anda masukkan menunjukkan tanda-tanda suicidal atau tidak.  
+        <br><br>
+        <strong>Harap masukkan deskripsi perasaan Anda di bawah ini.</strong>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-        predicted_class, predicted_prob = predict_text(model, tokenizer, text)
-        # sukses
-        response = {
-            'prediction': predicted_class,
-            'confidence': f"{predicted_prob:.2f}%"
-        }
-        return jsonify(response), 200
+# Input Section
+st.markdown("---")
+st.header("💬 Masukkan Teks Anda")
+text = st.text_area(
+    "Ceritakan perasaan Anda di sini:",
+    placeholder="Contoh: Saya merasa sangat sedih dan tidak tahu harus berbuat apa...",
+    height=150
+)
 
-    except Exception as e:
-        # 500
-        return jsonify({'error': 'Internal Server Error', 'message': str(e)}), 500
+# Prediction Button
+if st.button("🔍 Prediksi"):
+    if not text.strip():
+        st.error("❌ Input tidak valid. Mohon masukkan teks yang tidak kosong.")
+    else:
+        try:
+            # Get prediction and probability
+            predicted_class, predicted_prob = predict_text(model, tokenizer, text)
 
+            # Display Prediction Results
+            st.markdown("---")
+            st.header("📊 Hasil Prediksi")
+            
+            st.markdown(
+                f"""
+                **Teks Anda:**  
+                <blockquote style="font-style: italic; color: #555;">{text.strip()}</blockquote>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            if predicted_class == "Suicidal":
+                st.error("⚠️ **Hasil Prediksi: Anda butuh penanganan.**")
+                st.markdown(
+                    f"""
+                    **Kategori:** {predicted_class}  
+                    **Kepercayaan Model:** {predicted_prob:.2f}%  
+                    > **Pesan Penting:**  
+                    > Mohon segera mencari bantuan profesional jika Anda merasa tidak aman. Anda tidak sendiri, dan ada orang-orang yang peduli pada Anda.
+                    """
+                )
+            else:
+                st.success("✅ **Hasil Prediksi: Anda tampak baik-baik saja. Tetap jaga kondisi Anda.**")
+                st.markdown(
+                    f"""
+                    **Kategori:** {predicted_class}  
+                    **Kepercayaan Model:** {predicted_prob:.2f}%  
+                    > **Pesan Penting:**  
+                    > Tetap jaga kesehatan mental Anda dan hubungi seseorang jika Anda membutuhkan dukungan.
+                    """
+                )
 
-@app.errorhandler(405)
-def method_not_allowed(e):
-    return jsonify({'error': 'Method Not Allowed'}), 405
-
-
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({'error': 'Not Found'}), 404
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
+            # Footer Section
+            st.markdown("---")
+            st.markdown(
+                """
+                💡 _**Catatan:** Hasil prediksi ini hanya bersifat indikatif dan bukan pengganti bantuan profesional.  
+                Jika Anda merasa kesulitan, jangan ragu untuk mencari bantuan._  
+                """
+            )
+        except Exception as e:
+            st.error(f"❌ Terjadi kesalahan: {str(e)}")
