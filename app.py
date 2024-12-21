@@ -2,7 +2,7 @@ import streamlit as st
 from utils import load_tokenizer, load_model_file, predict_text, make_rounded_image
 import os
 
-# Load resources
+# Load resources (tokenizer and model)
 tokenizer = load_tokenizer('tokenizer.pkl')
 model = load_model_file('best_model.keras')
 
